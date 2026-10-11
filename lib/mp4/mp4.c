@@ -551,14 +551,21 @@ void mp4_close(struct mp4 *m)
 	track_free(&m->audio);
 }
 
-void mp4_iter_init(const struct mp4_track *t, struct mp4_iter *it)
+int mp4_iter_init(const struct mp4_track *t, struct mp4_iter *it)
 {
 	memset(it, 0, sizeof(*it));
+	if (t == NULL || t->codec == MP4_CODEC_NONE || !track_valid(t) ||
+	    t->chunk_offset == NULL || t->stts == NULL || t->stsc == NULL ||
+	    (t->fixed_size == 0U && t->sizes == NULL)) {
+		return -EINVAL;
+	}
 	it->chunk_pos = t->chunk_offset[0];
 	it->stts_left = t->stts[0];
 	if (t->ctts_count > 0U) {
 		it->ctts_left = t->ctts[0];
 	}
+
+	return 0;
 }
 
 int mp4_next(const struct mp4_track *t, struct mp4_iter *it, struct mp4_sample *s)
@@ -623,7 +630,9 @@ int mp4_seek_sync(const struct mp4_track *t, struct mp4_iter *it, uint32_t index
 	struct mp4_iter cur, last;
 	struct mp4_sample s;
 
-	mp4_iter_init(t, &cur);
+	if (mp4_iter_init(t, &cur) != 0) {
+		return -EINVAL;
+	}
 	last = cur;
 	while (cur.next <= index) {
 		struct mp4_iter before = cur;
@@ -638,4 +647,32 @@ int mp4_seek_sync(const struct mp4_track *t, struct mp4_iter *it, uint32_t index
 	*it = last;
 
 	return 0;
+}
+
+int mp4_seek_time(const struct mp4_track *t, struct mp4_iter *it, int64_t time)
+{
+	struct mp4_iter cur;
+	struct mp4_sample s;
+	int64_t target, best_pts = 0;
+	uint32_t best = 0;
+	bool found = false;
+
+	if (mp4_iter_init(t, &cur) != 0) {
+		return -EINVAL;
+	}
+	target = time + t->media_start;
+	while (mp4_next(t, &cur, &s) == 0) {
+		if (s.pts >= target && (!found || s.pts < best_pts)) {
+			best = s.index;
+			best_pts = s.pts;
+			found = true;
+		}
+	}
+	if (!found) {
+		/* past the end: the last key frame */
+		best = t->sample_count - 1U;
+	}
+	mp4_seek_sync(t, it, best);
+
+	return found ? 0 : -ERANGE;
 }

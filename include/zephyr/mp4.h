@@ -94,14 +94,29 @@ struct mp4 {
 int mp4_open(struct mp4 *m, mp4_read_t read, void *ctx, uint64_t file_size);
 void mp4_close(struct mp4 *m);
 
-/** Starts an iterator at the beginning of a track */
-void mp4_iter_init(const struct mp4_track *t, struct mp4_iter *it);
+/**
+ * Starts an iterator at the beginning of a track.
+ * Returns -EINVAL when the track does not exist (codec is MP4_CODEC_NONE) or has no sample tables.
+ */
+int mp4_iter_init(const struct mp4_track *t, struct mp4_iter *it);
 
 /** Next sample in decoding order; -ENODATA at the end */
 int mp4_next(const struct mp4_track *t, struct mp4_iter *it, struct mp4_sample *s);
 
-/** Positions the iterator on the last sync sample at or before @p index */
+/**
+ * Positions the iterator on the last sync sample at or before @p index.
+ * An index past the end gives the last sync sample. -EINVAL for a track that does not exist.
+ */
 int mp4_seek_sync(const struct mp4_track *t, struct mp4_iter *it, uint32_t index);
+
+/**
+ * Positions the iterator on the sync sample to start decoding from to show the frame at playback
+ * time @p time (track timescale units, 0 is the start of the presentation: media_start is added
+ * here). The frame is the sample with the smallest pts that is not before the time.
+ * Returns -ERANGE (iterator on the last sync sample) when the time is past the last sample,
+ * -EINVAL for a track that does not exist.
+ */
+int mp4_seek_time(const struct mp4_track *t, struct mp4_iter *it, int64_t time);
 
 #ifdef __cplusplus
 }
