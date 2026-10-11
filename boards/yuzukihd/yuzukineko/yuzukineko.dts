@@ -342,14 +342,16 @@
 
 /* Storage */
 /*
- * TF card slot on SMHC0 (4 bit, card detect on PF06, low with a card in). SMHC2
+ * TF card slot on SMHC0 (4 bit, card detect on PF06, low with a card in). The detect pin is not
+ * used for now (see cd-gpios below): some boards do not report a card in the slot, so the mount
+ * is always tried. SMHC2
  * (the WiFi SDIO port) stays off: its clock pin PE02 is the USB VBUS switch.
  */
 &smhc0 {
 	pinctrl-0 = <&smhc0_pins>;
 	pinctrl-names = "default";
 	bus-width = <4>;
-	cd-gpios = <&gpiof 6 GPIO_ACTIVE_LOW>;
+	/* cd-gpios = <&gpiof 6 GPIO_ACTIVE_LOW>; */
 	status = "okay";
 
 	sdmmc {
