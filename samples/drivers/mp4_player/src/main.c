@@ -345,6 +345,54 @@ static void show(const struct vdec_frame *f)
 }
 
 /*
+ * Pictures go to the display through a thread: committing one waits for the
+ * flip of the previous one (up to two refreshes), which would stall the
+ * decoder. The thread hands a picture back once the one after it is up, and
+ * the main thread releases it, so the decoder state stays single threaded.
+ */
+K_MSGQ_DEFINE(disp_q, sizeof(struct vdec_frame), 1, 4);
+K_MSGQ_DEFINE(done_q, sizeof(struct vdec_frame), 4, 4);
+K_THREAD_STACK_DEFINE(disp_stack, 16384);
+static struct k_thread disp_thread;
+
+static void disp_main(void *a, void *b, void *c)
+{
+	struct vdec_frame f, shown = {0}, older = {0};
+
+	ARG_UNUSED(a);
+	ARG_UNUSED(b);
+	ARG_UNUSED(c);
+	while (true) {
+		k_msgq_get(&disp_q, &f, K_FOREVER);
+		if (f.priv == NULL) {
+			break;
+		}
+		show(&f);
+		/* the commit waited for the flip of the picture before: the one before that is off the screen */
+		if (older.priv != NULL) {
+			k_msgq_put(&done_q, &older, K_FOREVER);
+		}
+		older = shown;
+		shown = f;
+	}
+	if (older.priv != NULL) {
+		k_msgq_put(&done_q, &older, K_FOREVER);
+	}
+	if (shown.priv != NULL) {
+		k_msgq_put(&done_q, &shown, K_FOREVER);
+	}
+}
+
+static void release_done(const struct device *dev)
+{
+	struct vdec_frame f;
+
+	while (k_msgq_get(&done_q, &f, K_NO_WAIT) == 0) {
+		vdec_frame_release(dev, &f);
+	}
+}
+
+/*
  * Waits for the time of a picture; false when it is too late to show it.
  * Without sound the clock is the time since the start.
  */
@@ -380,9 +428,11 @@ int main(void)
 	const struct vdec_stream_config scfg = {
 		.codec = VDEC_CODEC_H264,
 		.format = VDEC_FORMAT_NV12,
-		.buffer_size = 1024 * 1024,
+		.buffer_size = 512 * 1024,
+		/* only the display engine reads the pictures */
+		.no_cache_ops = true,
 	};
-	struct vdec_frame frame, shown = {0}, older = {0};
+	struct vdec_frame frame;
 	struct vdec_stream *stream;
 	struct fs_dirent st;
 	struct mp4_iter it;
@@ -407,7 +457,7 @@ int main(void)
 	}
 	fs_file_t_init(&vfile.f);
 	fs_file_t_init(&afile.f);
-	vfile.win_size = 256 * 1024;
+	vfile.win_size = 128 * 1024;
 	afile.win_size = 64 * 1024;
 	vfile.win = aligned_alloc(64, vfile.win_size);
 	afile.win = aligned_alloc(64, afile.win_size);
@@ -464,12 +514,17 @@ int main(void)
 	mp4_iter_init(v, &it);
 	play_stats.width = v->width;
 	play_stats.height = v->height;
+	k_thread_create(&disp_thread, disp_stack, K_THREAD_STACK_SIZEOF(disp_stack), disp_main, NULL,
+			NULL, NULL, 5, 0, K_NO_WAIT);
+	k_thread_name_set(&disp_thread, "display");
 	overlay_start();
 	start_ms = last_report = k_uptime_get();
 
 	while (true) {
-		uint32_t c0 = k_cycle_get_32();
+		uint32_t c0;
 
+		release_done(vdec_dev);
+		c0 = k_cycle_get_32();
 		ret = vdec_stream_get_frame(vdec_dev, stream, &frame);
 		t_get += us_since(c0);
 		if (ret == 0) {
@@ -481,14 +536,9 @@ int main(void)
 			t_wait += us_since(c0);
 			if (on_time) {
 				c0 = k_cycle_get_32();
-				show(&frame);
+				k_msgq_put(&disp_q, &frame, K_FOREVER);
+				release_done(vdec_dev);
 				t_show += us_since(c0);
-				/* the picture before the last may still be scanned out */
-				if (older.priv != NULL) {
-					vdec_frame_release(vdec_dev, &older);
-				}
-				older = shown;
-				shown = frame;
 				shown_count++;
 				report_frames++;
 				play_stats.frames = shown_count;
@@ -565,11 +615,12 @@ int main(void)
 			flushed = true;
 		}
 	}
-	if (older.priv != NULL) {
-		vdec_frame_release(vdec_dev, &older);
-	}
-	if (shown.priv != NULL) {
-		vdec_frame_release(vdec_dev, &shown);
+	{
+		struct vdec_frame end = {0};
+
+		k_msgq_put(&disp_q, &end, K_FOREVER);
+		k_thread_join(&disp_thread, K_FOREVER);
+		release_done(vdec_dev);
 	}
 	printk("done: %u shown, %u dropped, %u audio underruns\n", shown_count, dropped_count,
 	       audio_underruns);

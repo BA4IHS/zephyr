@@ -1,5 +1,5 @@
 sample:
-  name: Hardware PNG decoder
+  name: PNG decoder test
 tests:
   sample.drivers.vdec.png:
     platform_allow:
@@ -9,4 +9,4 @@ tests:
     harness_config:
       type: one_line
       regex:
-        - "png decode done"
+        - "PASS \\(0 failures\\)"

@@ -1,5 +1,5 @@
 sample:
-  name: Hardware JPEG decoder
+  name: JPEG decoder test
 tests:
   sample.drivers.vdec.jpeg:
     platform_allow:
@@ -9,4 +9,4 @@ tests:
     harness_config:
       type: one_line
       regex:
-        - "jpeg decode done"
+        - "PASS \\(0 failures\\)"

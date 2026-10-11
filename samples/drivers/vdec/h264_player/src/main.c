@@ -75,6 +75,8 @@ int main(void)
 		.codec = VDEC_CODEC_H264,
 		.format = VDEC_FORMAT_NV12,
 		.buffer_size = 1024 * 1024,
+		/* only the display engine reads the pictures */
+		.no_cache_ops = true,
 	};
 	struct vdec_frame frame, shown = {0}, older = {0};
 	struct vdec_stream *stream;
