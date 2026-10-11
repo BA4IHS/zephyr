@@ -1,0 +1,10 @@
+# Copyright (c) 2026 Yuzuki Tsuru
+# SPDX-License-Identifier: Apache-2.0
+
+config RTC_SUNXI
+	bool "Allwinner sunxi RTC driver"
+	default y
+	depends on DT_HAS_ALLWINNER_SUNXI_RTC_ENABLED
+	help
+	  Enable the real time clock of the Allwinner sunxi SoCs: the date and the time of day
+	  from 1970 to 2097, and one alarm that fires at a date and time.

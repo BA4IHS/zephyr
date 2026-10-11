@@ -227,6 +227,14 @@
 			status = "disabled";
 		};
 
+		rtc: rtc@3090000 {
+			compatible = "allwinner,sunxi-rtc";
+			reg = <0x03090000 0x200>;
+			interrupts = <144 1>;
+			interrupt-parent = <&plic>;
+			status = "disabled";
+		};
+
 		usbphy: usb-phy@4100400 {
 			compatible = "allwinner,sunxi-usb-phy";
 			#phy-cells = <0>;

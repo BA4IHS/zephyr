@@ -236,6 +236,12 @@
 	status = "okay";
 };
 
+&rtc {
+	status = "okay";
+	/* the 24 MHz crystal divided by 750: right to the accuracy of the main crystal */
+	clock-source = "hosc";
+};
+
 &wdt {
 	status = "okay";
 };

@@ -1,0 +1,29 @@
+# Copyright (c) 2026 Yuzuki Tsuru
+# SPDX-License-Identifier: Apache-2.0
+
+description: Allwinner sunxi real time clock (day counter and time of day, one alarm)
+
+compatible: "allwinner,sunxi-rtc"
+
+include: [rtc-device.yaml, base.yaml]
+
+properties:
+  reg:
+    required: true
+
+  interrupts:
+    required: true
+
+  clock-source:
+    type: string
+    default: "keep"
+    enum:
+      - "keep"
+      - "internal"
+      - "external"
+      - "hosc"
+    description: |
+      The 32 kHz clock that counts the seconds. "keep" leaves what the boot code configured.
+      "internal" is the on-chip RC oscillator (its rate is off by a lot: 60 % was measured),
+      "external" the 32.768 kHz crystal, "hosc" the 24 MHz main crystal divided by 750, which is
+      as accurate as the main crystal but runs only while the chip is powered.

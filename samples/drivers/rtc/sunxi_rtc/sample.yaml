@@ -1,0 +1,11 @@
+sample:
+  name: Allwinner sunxi RTC
+tests:
+  sample.drivers.rtc.sunxi:
+    platform_allow:
+      - yuzukineko
+    harness: console
+    harness_config:
+      type: one_line
+      regex:
+        - "PASS \\(0 failures\\)"
