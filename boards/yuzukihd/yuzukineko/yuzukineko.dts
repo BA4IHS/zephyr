@@ -351,6 +351,11 @@
 	pinctrl-0 = <&smhc0_pins>;
 	pinctrl-names = "default";
 	bus-width = <4>;
+	/*
+	 * The slot has no switch for the card power, so the power cycle of the card initialisation
+	 * does nothing and the 2 x 500 ms of the default are only waiting.
+	 */
+	power-delay-ms = <10>;
 	/* cd-gpios = <&gpiof 6 GPIO_ACTIVE_LOW>; */
 	status = "okay";
 
@@ -370,6 +375,8 @@
 	pinctrl-0 = <&smhc2_pins>;
 	pinctrl-names = "default";
 	bus-width = <4>;
+	/* the chip has been given its start-up time when the bus is initialised */
+	power-delay-ms = <100>;
 	non-removable;
 	status = "okay";
 
