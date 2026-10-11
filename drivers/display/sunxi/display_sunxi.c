@@ -237,24 +237,52 @@ static void sunxi_display_fb_plane(struct sunxi_display_data *data, struct displ
 	sunxi_display_fb_window(data, p);
 }
 
+/* The window of the picture that is shown: the crop, clamped into the picture, or all of it */
+static void sunxi_crop_window(struct display_rect *r, uint32_t x, uint32_t y, uint32_t w, uint32_t h,
+			      uint32_t width, uint32_t height, bool even)
+{
+	if (w == 0 || h == 0) {
+		x = y = 0;
+		w = width;
+		h = height;
+	}
+	if (even) {
+		x &= ~1U;
+		y &= ~1U;
+		w &= ~1U;
+		h &= ~1U;
+	}
+	w = CLAMP(w, 2U, width);
+	h = CLAMP(h, 2U, height);
+	x = MIN(x, width - w);
+	y = MIN(y, height - h);
+	r->x = x;
+	r->y = y;
+	r->width = w;
+	r->height = h;
+}
+
 int display_sunxi_show_yuv(const struct device *dev, const struct display_sunxi_yuv *img)
 {
 	struct sunxi_display_data *data = dev->data;
 	struct display_pipeline_state state;
 	struct display_plane_state *v, *fb;
 	uint32_t dw, dh;
+	struct display_rect src;
 
 	if (data->video_plane < 0) {
 		return -ENOTSUP;
 	}
+	sunxi_crop_window(&src, img->crop_x, img->crop_y, img->crop_width, img->crop_height,
+			  img->width, img->height, true);
 
-	/* largest size that fits the screen and keeps the shape of the picture */
-	if ((uint64_t)data->width * img->height <= (uint64_t)data->height * img->width) {
+	/* largest size that fits the screen and keeps the shape of the window */
+	if ((uint64_t)data->width * src.height <= (uint64_t)data->height * src.width) {
 		dw = data->width;
-		dh = (uint64_t)img->height * data->width / img->width;
+		dh = (uint64_t)src.height * data->width / src.width;
 	} else {
 		dh = data->height;
-		dw = (uint64_t)img->width * data->height / img->height;
+		dw = (uint64_t)src.width * data->height / src.height;
 	}
 	dw &= ~1U;
 	dh &= ~1U;
@@ -287,8 +315,7 @@ int display_sunxi_show_yuv(const struct device *dev, const struct display_sunxi_
 	v->framebuffer.width = img->width;
 	v->framebuffer.height = img->height;
 	v->framebuffer.stride = img->stride_y;
-	v->source.width = img->width;
-	v->source.height = img->height;
+	v->source = src;
 	v->destination.x = (data->width - dw) / 2;
 	v->destination.y = (data->height - dh) / 2;
 	v->destination.width = dw;
@@ -304,16 +331,19 @@ int display_sunxi_show_rgb(const struct device *dev, const struct display_sunxi_
 	struct display_pipeline_state state;
 	struct display_plane_state *v, *fb;
 	uint32_t dw, dh;
+	struct display_rect src;
 
 	if (data->video_plane < 0) {
 		return -ENOTSUP;
 	}
-	if ((uint64_t)data->width * img->height <= (uint64_t)data->height * img->width) {
+	sunxi_crop_window(&src, img->crop_x, img->crop_y, img->crop_width, img->crop_height,
+			  img->width, img->height, false);
+	if ((uint64_t)data->width * src.height <= (uint64_t)data->height * src.width) {
 		dw = data->width;
-		dh = (uint64_t)img->height * data->width / img->width;
+		dh = (uint64_t)src.height * data->width / src.width;
 	} else {
 		dh = data->height;
-		dw = (uint64_t)img->width * data->height / img->height;
+		dw = (uint64_t)src.width * data->height / src.height;
 	}
 	dw &= ~1U;
 	dh &= ~1U;
@@ -337,8 +367,7 @@ int display_sunxi_show_rgb(const struct device *dev, const struct display_sunxi_
 	v->framebuffer.width = img->width;
 	v->framebuffer.height = img->height;
 	v->framebuffer.stride = img->stride;
-	v->source.width = img->width;
-	v->source.height = img->height;
+	v->source = src;
 	v->destination.x = (data->width - dw) / 2;
 	v->destination.y = (data->height - dh) / 2;
 	v->destination.width = dw;

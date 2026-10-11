@@ -42,6 +42,14 @@ struct display_sunxi_yuv {
 	/** Bytes from one row to the next in the luma and chroma plane */
 	uint16_t stride_y;
 	uint16_t stride_uv;
+	/**
+	 * Part of the picture to show (zoom); all zero shows the whole picture. The window is
+	 * scaled to the screen keeping its shape. For YCbCr the values are rounded to even numbers.
+	 */
+	uint16_t crop_x;
+	uint16_t crop_y;
+	uint16_t crop_width;
+	uint16_t crop_height;
 	/** Samples cover 0..255 instead of 16..235 (JPEG) */
 	bool full_range;
 	/** BT.709 matrix instead of BT.601 */
@@ -72,6 +80,14 @@ struct display_sunxi_rgb {
 	uint16_t height;
 	/** Bytes from one row to the next */
 	uint16_t stride;
+	/**
+	 * Part of the picture to show (zoom); all zero shows the whole picture. The window is
+	 * scaled to the screen keeping its shape. For RGB the window is in pixels.
+	 */
+	uint16_t crop_x;
+	uint16_t crop_y;
+	uint16_t crop_width;
+	uint16_t crop_height;
 	/** 32 bit XRGB8888 instead of RGB565 */
 	bool xrgb8888;
 	/** As in display_sunxi_yuv */
