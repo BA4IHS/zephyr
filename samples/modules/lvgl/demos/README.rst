@@ -42,6 +42,15 @@ Example building for :zephyr:board:`mimxrt1060_evk`:
    :board: mimxrt1060_evk
    :goals: build flash
 
+Example building for :zephyr:board:`yuzukineko` (1024x768 MIPI DSI panel and GT967 touch panel, the
+options are in ``boards/yuzukineko.conf`` and ``boards/yuzukineko.overlay``; pick the demo with
+``CONFIG_LV_Z_DEMO_*``, for example ``-DCONFIG_LV_Z_DEMO_BENCHMARK=y``):
+
+.. zephyr-app-commands::
+   :zephyr-app: samples/modules/lvgl/demos
+   :board: yuzukineko
+   :goals: build
+
 These demos can be built for simulated display environment as follows:
 
 .. zephyr-app-commands::
