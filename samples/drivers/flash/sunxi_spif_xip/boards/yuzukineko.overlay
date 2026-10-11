@@ -1,0 +1,25 @@
+/*
+ * The image is linked into the memory window of the SPIF controller, which maps the flash from
+ * the offset the boot stub (SyterKit xip-boot) programs at 0x0e000000. The window is 6 MiB:
+ * 0xa00000 up to the end of the 16 MiB flash.
+ */
+
+/ {
+	soc {
+		xip_flash: flash@e000000 {
+			compatible = "soc-nv-flash";
+			reg = <0x0e000000 0x600000>;
+			erase-block-size = <4096>;
+			write-block-size = <1>;
+		};
+	};
+
+	chosen {
+		zephyr,flash = &xip_flash;
+	};
+};
+
+/* spi0 uses the pins of the flash (PC0..PC5): switching them away would cut the window off */
+&spi0 {
+	status = "disabled";
+};
