@@ -124,7 +124,11 @@ static void lvgl_log(lv_log_level_t level, const char *buf)
 		LOG_DBG("%s", buf + (sizeof("[Trace] ") - 1));
 		break;
 	case LV_LOG_LEVEL_USER:
-		LOG_INF("%s", buf + (sizeof("[User] ") - 1));
+		/*
+		 * LV_LOG_USER() comes with the "[User] " prefix, LV_LOG() (the benchmark demo
+		 * prints its table with it) is the bare message.
+		 */
+		LOG_INF("%s", buf[0] == '[' ? buf + (sizeof("[User] ") - 1) : buf);
 		break;
 	}
 }
