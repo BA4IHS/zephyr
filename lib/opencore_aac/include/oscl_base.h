@@ -12,6 +12,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -35,6 +36,9 @@ typedef unsigned int uint;
 /*
  * The bit reader functions are plain "__inline" in the headers: in C that leaves
  * no out-of-line copy for the calls the compiler does not inline.
+ * stdio.h is included above because its inline functions are declared "static
+ * __inline" and break with this macro, so it must already be included when an
+ * application includes the decoder header before it.
  */
 #define __inline static __inline__
 

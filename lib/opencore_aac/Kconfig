@@ -4,7 +4,8 @@
 config OPENCORE_AAC
 	bool "OpenCORE AAC decoder"
 	help
-	  Fixed-point AAC-LC / HE-AAC decoder of the OpenCORE multimedia
-	  framework (west project modules/lib/opencore, Apache-2.0). Integer
-	  only, no libm. The decoder sources are C written in .cpp files and are
-	  built as C.
+	  Fixed-point AAC-LC decoder of the OpenCORE multimedia framework
+	  (west project modules/lib/opencore, Apache-2.0). Integer only, no
+	  libm. AAC_PLUS is not defined in this build, so the SBR and PS tools
+	  of HE-AAC are not decoded. The decoder sources are C written in .cpp
+	  files and are built as C.

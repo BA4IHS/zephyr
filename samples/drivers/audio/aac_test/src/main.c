@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-/* Decodes an embedded ADTS clip with the Helix AAC decoder and compares it with a reference decode */
+/* Decodes an embedded ADTS clip with the OpenCORE AAC decoder and compares it with a reference decode */
 
 #include <stdint.h>
 #include <stdlib.h>
