@@ -68,6 +68,8 @@ struct sunxi_display_data {
 	bool blanked;
 	/* plane that scans out YCbCr pictures, -1 when there is none */
 	int video_plane;
+	/* the frame buffer plane is kept off, whatever else is submitted */
+	bool fb_off;
 };
 
 static int sunxi_display_write(const struct device *dev, const uint16_t x,
@@ -220,7 +222,7 @@ static void sunxi_display_fb_plane(struct sunxi_display_data *data, struct displ
 				   bool enable, uint8_t blend_mode)
 {
 	memset(p, 0, sizeof(*p));
-	p->enable = enable;
+	p->enable = enable && !data->fb_off;
 	p->plane_id = SUNXI_FB_PLANE;
 	p->alpha = 0xff;
 	p->blend_mode = blend_mode;
@@ -362,6 +364,21 @@ int display_sunxi_hide_yuv(const struct device *dev)
 	memset(&state.planes[1], 0, sizeof(state.planes[1]));
 	state.planes[1].plane_id = data->video_plane;
 	state.planes[1].enable = false;
+
+	return display_submit_ex(&state, DISPLAY_SUBMIT_PARTIAL);
+}
+
+int display_sunxi_fb_enable(const struct device *dev, bool enable)
+{
+	struct sunxi_display_data *data = dev->data;
+	struct display_pipeline_state state;
+
+	data->fb_off = !enable;
+	display_pipeline_state_init(&state);
+	state.plane_count = 1;
+	sunxi_display_fb_plane(data, &state.planes[0], true,
+			       IS_ENABLED(CONFIG_DISPLAY_SUNXI_ARGB8888) ? DISPLAY_BLEND_COVERAGE
+									 : DISPLAY_BLEND_NONE);
 
 	return display_submit_ex(&state, DISPLAY_SUBMIT_PARTIAL);
 }

@@ -88,6 +88,12 @@ int display_sunxi_show_rgb(const struct device *dev, const struct display_sunxi_
 /** @brief Stop showing the picture and bring the frame buffer plane back */
 int display_sunxi_hide_yuv(const struct device *dev);
 
+/**
+ * Switches the frame buffer plane on or off without touching its content. A plane that is off
+ * is not read by the display engine, which saves memory bandwidth while only a video is shown.
+ */
+int display_sunxi_fb_enable(const struct device *dev, bool enable);
+
 #ifdef __cplusplus
 }
 #endif
