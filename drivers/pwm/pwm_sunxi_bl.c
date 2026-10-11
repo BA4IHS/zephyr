@@ -197,7 +197,7 @@ static int pwm_sunxi_bl_set_cycles(const struct device *dev, uint32_t channel,
 
 	ARG_UNUSED(flags);	/* the analog stage has no polarity */
 
-	if (period_cycles == 0 || pulse_cycles > period_cycles) {
+	if (channel != 0 || period_cycles == 0 || pulse_cycles > period_cycles) {
 		return -EINVAL;
 	}
 
