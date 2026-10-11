@@ -6,6 +6,7 @@
 
 #define DT_DRV_COMPAT goodix_gt967
 
+#include <stdlib.h>
 #include <zephyr/drivers/gpio.h>
 #include <zephyr/drivers/i2c.h>
 #include <zephyr/input/input.h>
@@ -86,6 +87,9 @@ static int gt967_write(const struct device *dev, uint16_t reg, const void *buf, 
 	return i2c_write_dt(&cfg->bus, msg, 2U + len);
 }
 
+/* movements up to this many pixels are noise of a finger at rest */
+#define JITTER_PX 2
+
 static void gt967_report(const struct device *dev, uint8_t id, uint16_t x, uint16_t y, bool down)
 {
 	if (CONFIG_INPUT_GT967_MAX_TOUCH_POINTS > 1) {
@@ -137,8 +141,10 @@ static void gt967_work_handler(struct k_work *work)
 		uint16_t y = sys_get_le16(&p[3]);
 
 		now |= BIT(id);
-		/* the controller repeats a resting finger in every frame, report what changed */
-		if ((data->down & BIT(id)) && data->last_x[id] == x && data->last_y[id] == y) {
+		/* the controller repeats a resting finger in every frame and the coordinates of a finger at
+		 * rest vary by a pixel or two: report what moved */
+		if ((data->down & BIT(id)) && abs((int)data->last_x[id] - (int)x) <= JITTER_PX &&
+		    abs((int)data->last_y[id] - (int)y) <= JITTER_PX) {
 			continue;
 		}
 		data->last_x[id] = x;
