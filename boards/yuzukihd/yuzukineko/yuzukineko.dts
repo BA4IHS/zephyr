@@ -362,7 +362,7 @@
 };
 
 /*
- * WiFi: AIC8800D40 on SMHC2 (4 bit SDIO, not removable). REG_ON on PE10 powers the chip, it
+ * WiFi: AIC8800D80 on SMHC2 (4 bit SDIO, not removable). REG_ON on PE10 powers the chip, it
  * enumerates on the bus after the line is raised. The Bluetooth part has its reset on PD8 and its
  * HCI on UART2.
  */
