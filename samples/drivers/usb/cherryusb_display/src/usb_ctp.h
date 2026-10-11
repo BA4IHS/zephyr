@@ -7,7 +7,7 @@
 #ifndef USB_CTP_H_
 #define USB_CTP_H_
 
-/* start the thread that reads the touch panel and sends its points to the USB touch screen */
+/* check the touch panel; its input events are sent to the USB touch screen from then on */
 void usb_ctp_start(void);
 
 #endif

@@ -2,7 +2,7 @@ sample:
   name: USB second screen
 tests:
   sample.drivers.usb.cherryusb_display:
-    platform_allow: f101_evb
+    platform_allow: yuzukineko
     tags: usb display
     harness: none
     build_only: true
