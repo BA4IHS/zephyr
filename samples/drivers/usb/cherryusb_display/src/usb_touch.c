@@ -124,6 +124,8 @@ void usbd_hid_get_report(uint8_t busid, uint8_t intf, uint8_t report_id, uint8_t
 
 void usb_touch_init(uint8_t busid)
 {
+	/* a report that was on its way when the device was stopped never completes */
+	tx_busy = false;
 	usbd_add_interface(busid, usbd_hid_init_intf(busid, &hid_intf, report_descriptor, sizeof(report_descriptor)));
 	usbd_add_endpoint(busid, &touch_ep);
 }

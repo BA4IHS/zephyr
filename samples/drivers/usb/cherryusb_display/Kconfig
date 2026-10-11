@@ -44,9 +44,14 @@ config SAMPLE_USB_DISPLAY_CTP_SWAP
 config SAMPLE_USB_DISPLAY_CTP_FLIP_X
 	bool "Mirror X of the touch panel"
 	depends on SAMPLE_USB_DISPLAY_CTP
+	default y
+	help
+	  With the flip of Y this is the 180 degree turn of the panel of the board against the
+	  picture the PC sees.
 
 config SAMPLE_USB_DISPLAY_CTP_FLIP_Y
 	bool "Mirror Y of the touch panel"
 	depends on SAMPLE_USB_DISPLAY_CTP
+	default y
 
 source "Kconfig.zephyr"

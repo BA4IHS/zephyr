@@ -32,13 +32,27 @@ static bool swap_xy = IS_ENABLED(CONFIG_SAMPLE_USB_DISPLAY_CTP_SWAP);
 static bool flip_x = IS_ENABLED(CONFIG_SAMPLE_USB_DISPLAY_CTP_FLIP_X);
 static bool flip_y = IS_ENABLED(CONFIG_SAMPLE_USB_DISPLAY_CTP_FLIP_Y);
 
+/*
+ * A finger the panel loses for a moment would end a drag selection or a press and hold on the PC,
+ * so a lift is reported only when the finger stays away for UP_DEBOUNCE_MS. While a finger is
+ * down the report is repeated every BEAT_MS, as the PC expects from a touch screen.
+ */
+#define UP_DEBOUNCE_MS	50
+#define BEAT_MS		20
+
 /* what the input events tell about each finger (slot) */
 static struct {
 	uint16_t x, y;		/* in panel pixels */
-	bool down;
-	bool lifted;		/* went up since the last report: one report with the tip switch off */
+	bool down;		/* as the PC knows it */
+	bool lifted;		/* one more report with the tip switch off */
+	uint32_t up_at;		/* the panel lost the finger: when to tell the PC, 0 when it is down */
 } slot[POINTS];
 static int cur_slot;
+static struct k_spinlock lock;
+static struct k_work_q ctp_q;
+K_THREAD_STACK_DEFINE(ctp_q_stack, 2048);
+static void ctp_beat(struct k_work *work);
+static K_WORK_DELAYABLE_DEFINE(ctp_work, ctp_beat);
 
 static void scale(uint32_t x, uint32_t y, uint16_t *ox, uint16_t *oy)
 {
@@ -64,14 +78,28 @@ static void scale(uint32_t x, uint32_t y, uint16_t *ox, uint16_t *oy)
 	*oy = y * USB_TOUCH_MAX / (max_y - 1);
 }
 
-/* one report with the slots 0..count-1, a lifted finger once with its tip switch off */
-static void ctp_send(void)
+/*
+ * One report with the slots 0..count-1, a lifted finger once with its tip switch off. It runs in
+ * a queue of its own: the input events come in the system work queue, which must not wait for the
+ * USB endpoint.
+ */
+static void ctp_beat(struct k_work *work)
 {
 	struct usb_touch_point out[POINTS];
+	uint32_t now = k_uptime_get_32();
+	bool any = false;
 	int count = 0;
+	k_spinlock_key_t key;
 
+	ARG_UNUSED(work);
 	memset(out, 0, sizeof(out));
+	key = k_spin_lock(&lock);
 	for (int i = 0; i < POINTS; i++) {
+		if (slot[i].down && slot[i].up_at != 0 && (int32_t)(now - slot[i].up_at) >= 0) {
+			slot[i].down = false;
+			slot[i].lifted = true;
+			slot[i].up_at = 0;
+		}
 		out[i].id = i;
 		if (slot[i].down || slot[i].lifted) {
 			out[i].down = slot[i].down;
@@ -79,17 +107,24 @@ static void ctp_send(void)
 			count = i + 1;
 		}
 		slot[i].lifted = false;
+		any |= slot[i].down;
 	}
-	if (count == 0) {
-		return;
+	k_spin_unlock(&lock, key);
+
+	if (count != 0) {
+		for (int n = 0; usb_touch_send(out, count) == -EBUSY && n < SEND_WAIT_MS; n++) {
+			k_msleep(1);
+		}
 	}
-	for (int n = 0; usb_touch_send(out, count) == -EBUSY && n < SEND_WAIT_MS; n++) {
-		k_msleep(1);
+	if (any) {
+		k_work_schedule_for_queue(&ctp_q, &ctp_work, K_MSEC(BEAT_MS));
 	}
 }
 
 static void ctp_event(struct input_event *evt, void *user_data)
 {
+	k_spinlock_key_t key = k_spin_lock(&lock);
+
 	switch (evt->code) {
 	case INPUT_ABS_MT_SLOT:
 		cur_slot = CLAMP(evt->value, 0, POINTS - 1);
@@ -101,16 +136,19 @@ static void ctp_event(struct input_event *evt, void *user_data)
 		slot[cur_slot].y = evt->value;
 		break;
 	case INPUT_BTN_TOUCH:
-		if (!evt->value && slot[cur_slot].down) {
-			slot[cur_slot].lifted = true;
+		if (evt->value) {
+			slot[cur_slot].down = true;
+			slot[cur_slot].up_at = 0;
+		} else if (slot[cur_slot].down && slot[cur_slot].up_at == 0) {
+			slot[cur_slot].up_at = k_uptime_get_32() + UP_DEBOUNCE_MS;
 		}
-		slot[cur_slot].down = evt->value;
 		break;
 	default:
 		break;
 	}
+	k_spin_unlock(&lock, key);
 	if (evt->sync) {
-		ctp_send();
+		k_work_reschedule_for_queue(&ctp_q, &ctp_work, K_NO_WAIT);
 	}
 }
 INPUT_CALLBACK_DEFINE(DEVICE_DT_GET(TOUCH_NODE), ctp_event, NULL);
@@ -121,5 +159,7 @@ void usb_ctp_start(void)
 		printk("usb ctp: the touch panel is not ready\n");
 		return;
 	}
+	k_work_queue_init(&ctp_q);
+	k_work_queue_start(&ctp_q, ctp_q_stack, K_THREAD_STACK_SIZEOF(ctp_q_stack), 6, NULL);
 	printk("usb ctp: touch panel %s, %ux%u\n", touch_dev->name, CTP_MAX_X, CTP_MAX_Y);
 }
