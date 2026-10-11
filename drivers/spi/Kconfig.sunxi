@@ -18,8 +18,8 @@ config SPI_SUNXI_DMA
 	default y
 	depends on SPI_SUNXI && DMA
 	help
-	  Reads of at least SPI_SUNXI_DMA_MIN_LEN bytes into a 4 byte aligned
-	  buffer are moved by the DMA controller (the node needs 'dmas').
+	  Reads of at least SPI_SUNXI_DMA_MIN_LEN bytes into a 64 byte aligned
+	  buffer (a cache line) are moved by the DMA controller (the node needs 'dmas').
 
 config SPI_SUNXI_DMA_MIN_LEN
 	int "Shortest read that uses the DMA"
