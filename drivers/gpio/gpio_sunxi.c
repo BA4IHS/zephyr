@@ -205,12 +205,18 @@ static int gpio_sunxi_pin_interrupt_configure(const struct device *dev,
 
 		reg = bank_base + hw->mux_regs_offset +
 		      (pin / hw->mux_pins_per_reg) * 4;
-		reg = (sys_read32(reg) &
-		       ~(0xf << (pin % hw->mux_pins_per_reg) * hw->mux_pins_bits)) |
-		      (data->prev_mux[pin] << (pin % hw->mux_pins_per_reg) *
-		       hw->mux_pins_bits);
-		sys_write32(reg, bank_base + hw->mux_regs_offset +
-			    (pin / hw->mux_pins_per_reg) * 4);
+		/* Put the saved function back only if the pin is still on the IRQ mux:
+		 * after gpio_pin_configure() it already has its new function.
+		 */
+		if (((sys_read32(reg) >> (pin % hw->mux_pins_per_reg) * hw->mux_pins_bits) &
+		     0xf) == hw->irq_muxsel) {
+			reg = (sys_read32(reg) &
+			       ~(0xf << (pin % hw->mux_pins_per_reg) * hw->mux_pins_bits)) |
+			      (data->prev_mux[pin] << (pin % hw->mux_pins_per_reg) *
+			       hw->mux_pins_bits);
+			sys_write32(reg, bank_base + hw->mux_regs_offset +
+				    (pin / hw->mux_pins_per_reg) * 4);
+		}
 
 		return 0;
 	}
@@ -235,8 +241,13 @@ static int gpio_sunxi_pin_interrupt_configure(const struct device *dev,
 	/* Save the current pin function and switch to IRQ mux */
 	reg = bank_base + hw->mux_regs_offset +
 	      (pin / hw->mux_pins_per_reg) * 4;
-	data->prev_mux[pin] = (sys_read32(reg) >>
-			       (pin % hw->mux_pins_per_reg) * hw->mux_pins_bits) & 0xf;
+	uint32_t cur_mux = (sys_read32(reg) >>
+			    (pin % hw->mux_pins_per_reg) * hw->mux_pins_bits) & 0xf;
+
+	/* Arming a pin that is already armed must not save the IRQ mux as its function. */
+	if (cur_mux != hw->irq_muxsel) {
+		data->prev_mux[pin] = cur_mux;
+	}
 	reg = (sys_read32(reg) &
 	       ~(0xf << (pin % hw->mux_pins_per_reg) * hw->mux_pins_bits)) |
 	      (hw->irq_muxsel << (pin % hw->mux_pins_per_reg) * hw->mux_pins_bits);
