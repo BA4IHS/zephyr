@@ -16,11 +16,12 @@ if SDHC_SUNXI
 
 config SDHC_SUNXI_MAX_DESC
 	int "Number of DMA descriptors"
-	default 64
+	default 128
 	range 2 1024
 	help
 	  Each descriptor moves up to 8 KiB, so this bounds the size of one
-	  transfer done by DMA. Larger requests are rejected.
+	  transfer done by DMA: 128 descriptors are 1 MiB. Larger requests are
+	  done by the CPU.
 
 config SDHC_SUNXI_BOUNCE_KB
 	int "Size of the bounce buffer in KiB"

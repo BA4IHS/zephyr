@@ -3,7 +3,7 @@ sample:
 tests:
   sample.drivers.sdhc_sunxi:
     platform_allow:
-      - f101_evb
+      - yuzukineko
     tags: sdhc
     harness: console
     harness_config:
