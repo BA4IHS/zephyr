@@ -31,6 +31,7 @@ struct ve_stream {
 	int read_pos;
 	int write_pos;
 	int done_pos;
+	int pad_next;		/* bytes skipped before the unit about to be added */
 };
 
 struct ve_stream *ve_stream_create(size_t size)
@@ -79,6 +80,7 @@ void ve_stream_reset(struct ve_stream *s)
 	s->used = 0;
 	s->read_pos = s->write_pos = s->done_pos = 0;
 	s->valid = s->unread = 0;
+	s->pad_next = 0;
 	k_mutex_unlock(&s->lock);
 }
 
@@ -117,6 +119,36 @@ int ve_stream_room(struct ve_stream *s, int size, uint8_t **start)
 	return ret;
 }
 
+int ve_stream_room_contiguous(struct ve_stream *s, int size, uint8_t **start)
+{
+	int ret = -ENOSPC;
+
+	k_mutex_lock(&s->lock, K_FOREVER);
+	if (s->valid < MAX_UNITS && s->used < s->buffer_size) {
+		int tail = (s->buffer_end - s->write_addr) + 1;
+
+		if (size <= tail) {
+			if (size + REQUEST_MARGIN <= s->buffer_size - s->used) {
+				*start = s->write_addr;
+				ret = 0;
+			}
+		} else if (s->pad_next == 0 && size + tail + REQUEST_MARGIN <= s->buffer_size - s->used) {
+			/* the end of the ring is given up, it is counted with the unit */
+			s->pad_next = tail;
+			s->write_addr = s->buffer;
+			*start = s->write_addr;
+			ret = 0;
+		} else if (s->pad_next != 0 &&
+		   size + s->pad_next + REQUEST_MARGIN <= s->buffer_size - s->used) {
+			*start = s->write_addr;
+			ret = 0;
+		}
+	}
+	k_mutex_unlock(&s->lock);
+
+	return ret;
+}
+
 int ve_stream_add(struct ve_stream *s, const struct ve_unit *unit)
 {
 	int ret = -ENOSPC;
@@ -124,16 +156,18 @@ int ve_stream_add(struct ve_stream *s, const struct ve_unit *unit)
 	k_mutex_lock(&s->lock, K_FOREVER);
 	if (s->valid >= MAX_UNITS) {
 		LOG_ERR("stream unit queue is full");
-	} else if (unit->length + s->used > s->buffer_size) {
+	} else if (unit->length + s->pad_next + s->used > s->buffer_size) {
 		LOG_ERR("stream buffer is full");
 	} else {
 		uint8_t *next = s->write_addr + unit->length;
 
 		s->units[s->write_pos] = *unit;
+		s->units[s->write_pos].pad = s->pad_next;
 		s->write_pos = (s->write_pos + 1) % MAX_UNITS;
 		s->valid++;
 		s->unread++;
-		s->used += unit->length;
+		s->used += unit->length + s->pad_next;
+		s->pad_next = 0;
 		if (next > s->buffer_end) {
 			next -= s->buffer_size;
 		}
@@ -190,7 +224,7 @@ int ve_stream_done(struct ve_stream *s, struct ve_unit *unit)
 	} else {
 		s->done_pos = (s->done_pos + 1) % MAX_UNITS;
 		s->valid--;
-		s->used -= unit->length;
+		s->used -= unit->length + unit->pad;
 		ret = 0;
 	}
 	k_mutex_unlock(&s->lock);

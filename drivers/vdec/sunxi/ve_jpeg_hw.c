@@ -148,7 +148,11 @@ int ve_jpeg_hw_decode(const struct ve_jpeg_job *job)
 	sys_write32(job->data_size << 3, (mem_addr_t)(r) + (R_STREAM_LEN));
 	sys_write32(stream_addr_word(job->vbv_phys), (mem_addr_t)(r) + (R_STREAM_ADDR));
 	sys_write8(START_DECODE, (mem_addr_t)(r) + R_START);
-	ve_hw_wait();
+	if (ve_hw_wait() != 0) {
+		sys_write32(sys_read32((mem_addr_t)(r) + (R_STATUS)) | 0x0f,
+			    (mem_addr_t)(r) + (R_STATUS));
+		return -ETIMEDOUT;
+	}
 	sys_write32(sys_read32((mem_addr_t)(r) + (R_STATUS)) | 0x0f, (mem_addr_t)(r) + (R_STATUS));
 
 	return 0;

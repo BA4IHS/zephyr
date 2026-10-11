@@ -294,7 +294,12 @@ int ve_session_write(struct ve_session *s, const void *data, size_t len, int64_t
 	if (len == 0) {
 		return -EINVAL;
 	}
-	if (ve_stream_room(s->stream, len + already, &mem) != 0) {
+	/* the JPEG engine and the parser want a picture in one piece */
+	if (s->codec->id == VE_CODEC_JPEG && already == 0) {
+		if (ve_stream_room_contiguous(s->stream, len, &mem) != 0) {
+			return -ENOSPC;
+		}
+	} else if (ve_stream_room(s->stream, len + already, &mem) != 0) {
 		return -ENOSPC;
 	}
 	start = mem + already;

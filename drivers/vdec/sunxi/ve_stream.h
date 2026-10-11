@@ -29,6 +29,8 @@ struct ve_unit {
 	uint8_t *data;
 	int length;
 	int64_t pts;
+	/* bytes at the end of the ring skipped in front of this unit (set by the stream) */
+	int pad;
 };
 
 struct ve_stream;
@@ -49,6 +51,12 @@ int ve_stream_units(const struct ve_stream *stream);
  * The room continues at the start of the ring when it runs past the end.
  */
 int ve_stream_room(struct ve_stream *stream, int size, uint8_t **start);
+/*
+ * Like ve_stream_room(), but the room does not wrap: when it would run past the end of the ring,
+ * the bytes up to the end are given up and the room starts at the beginning. For consumers that
+ * need a unit in one piece.
+ */
+int ve_stream_room_contiguous(struct ve_stream *stream, int size, uint8_t **start);
 /* Queue a unit whose bytes were written at the write position */
 int ve_stream_add(struct ve_stream *stream, const struct ve_unit *unit);
 

@@ -127,6 +127,10 @@ static enum ve_step jpeg_step(void *ctx, bool eos)
 
 	ve_stream_done(s->stream, unit);
 	if (ret != 0) {
+		LOG_WRN("jpeg picture dropped (%d): %dx%d, %u bytes at %u of a %u byte ring, ends at %u",
+			ret, j->frame.width, j->frame.height, (uint32_t)unit->length,
+			(uint32_t)(unit->data - base), job.vbv_size,
+			(uint32_t)(unit->data - base) + (uint32_t)unit->length);
 		ve_pool_discard(s->pool, pic);
 		return VE_STEP_PROGRESS;
 	}
