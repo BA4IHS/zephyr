@@ -1,0 +1,10 @@
+# Copyright (c) 2026 Yuzuki Tsuru
+# SPDX-License-Identifier: Apache-2.0
+
+mainmenu "H.264 decoder test"
+
+config SAMPLE_H264_ONLY
+	string "Run only these streams (space separated names, empty = all)"
+	default ""
+
+source "Kconfig.zephyr"
