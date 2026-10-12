@@ -33,7 +33,16 @@ static void lvgl_pointer_process_event(struct input_event *evt, void *user_data)
 	const struct device *dev = user_data;
 	const struct lvgl_pointer_input_config *cfg = dev->config;
 	struct lvgl_pointer_input_data *data = dev->data;
-	lv_display_t *disp = lv_indev_get_display(data->common_data.indev);
+	lv_display_t *disp;
+
+	/* the touch panel can report before LVGL has created its input device and display */
+	if (data->common_data.indev == NULL) {
+		return;
+	}
+	disp = lv_indev_get_display(data->common_data.indev);
+	if (disp == NULL) {
+		return;
+	}
 	struct lvgl_disp_data *disp_data = (struct lvgl_disp_data *)lv_display_get_user_data(disp);
 	struct display_capabilities *cap = &disp_data->cap;
 	lv_point_t *point = &data->common_data.pending_event.point;
