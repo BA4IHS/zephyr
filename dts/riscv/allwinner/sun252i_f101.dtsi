@@ -45,9 +45,9 @@
 		ranges;
 
 		/* Internal SRAM/PSRAM, code loaded here by the bootloader */
-		sram0: memory@40010000 {
+		sram0: memory@40000000 {
 			compatible = "mmio-sram";
-			reg = <0x40010000 0xff0000>;
+			reg = <0x40000000 0x1000000>;
 		};
 
 		ccu: ccu@2001000 {

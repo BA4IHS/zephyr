@@ -68,12 +68,12 @@ Build and run
    . ./env.sh                       # in the workspace: venv, ZEPHYR_BASE, toolchain
    west build -b yuzukineko -d build/hello zephyr/samples/hello_world
 
-The image is linked at ``0x40010000``. Without boot media it is loaded over USB
+The image is linked at ``0x40000000``. Without boot media it is loaded over USB
 with ``xfel`` (FEL mode, power cycle before every download)::
 
    xfel ddr f101-s3
-   xfel write 0x40010000 build/hello/zephyr/zephyr.bin
-   xfel exec 0x40010000
+   xfel write 0x40000000 build/hello/zephyr/zephyr.bin
+   xfel exec 0x40000000
 
 Or write it to the SPI NOR flash and let the boot loader start it, see
 ``uf2-downloader`` in the ``zephyr-components`` repository (flash by copying a
