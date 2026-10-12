@@ -70,6 +70,22 @@ static int raw_test(void)
 	if (ret) {
 		return ret;
 	}
+	for (int i = 0; i < 64; i += 16) {
+		printk("%03x:", i);
+		for (int j = 0; j < 16; j++) {
+			printk(" %02x", buf[i + j]);
+		}
+		printk("\n");
+	}
+	/* where a partition table or a file system starts: boot signature of the first sectors */
+	for (uint32_t sec = 0; sec < 4096 && sec < sectors; sec++) {
+		if (disk_access_read(DISK_NAME, buf, sec, 1) == 0 && buf[510] == 0x55 &&
+		    buf[511] == 0xaa) {
+			printk("boot signature in sector %u: %02x %02x %02x, type of entry 1: %02x, start %02x%02x%02x%02x\n",
+			       sec, buf[0], buf[1], buf[2], buf[450], buf[457], buf[456], buf[455], buf[454]);
+			break;
+		}
+	}
 
 	/* aligned, multi block */
 	t = k_uptime_get();
