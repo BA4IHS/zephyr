@@ -12,6 +12,10 @@
  * The offsets of the devices in them are in the device tree.
  */
 const struct riscv_mmu_region riscv_mmu_regions[] = {
+#ifdef CONFIG_XIP
+	/* the image in the flash window of the SPI NOR controller: constants are loads */
+	RISCV_MMU_REGION("xip", 0x0e000000, 0x00800000),
+#endif
 	/* video engine */
 	RISCV_MMU_REGION("ve", 0x01c00000, 0x00400000),
 	/* GPIO, PWM, CCU, GPADC, audio codec, I2S, S/PDIF */

@@ -147,8 +147,11 @@ SECTIONS
 
     GROUP_START(ROMABLE_REGION)
     __rom_region_start = ROM_BASE;
-#ifdef CONFIG_MMU
+#if defined(CONFIG_MMU) && !defined(CONFIG_XIP)
     z_mapped_start = __rom_region_start;
+#elif defined(CONFIG_MMU)
+    /* the code and the constants are in the flash window, only the RAM is mapped pages */
+    z_mapped_start = CONFIG_SRAM_BASE_ADDRESS;
 #endif
 
     SECTION_PROLOGUE(rom_start,,)
