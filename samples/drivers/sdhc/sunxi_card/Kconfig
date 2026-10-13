@@ -1,0 +1,13 @@
+# SPDX-License-Identifier: Apache-2.0
+
+mainmenu "Card test"
+
+config SAMPLE_CARD_ROUNDS
+	int "Times the card is started again and read"
+	default 20
+
+config SAMPLE_CARD_SECTORS
+	int "Sectors read after the start (twice, the two reads must be equal)"
+	default 2048
+
+source "Kconfig.zephyr"

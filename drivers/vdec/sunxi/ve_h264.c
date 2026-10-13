@@ -188,7 +188,7 @@ static int start_sequence(struct h264 *h, const struct h264_sps *sps)
 		size_t fixed = (size_t)(h->dpb.size + 1) * 2 *
 			       ROUND_UP((size_t)mbs * MVCOL_BYTES_PER_MB, 2048) +
 			       (size_t)mbs * MB_INFO_BYTES_PER_MB * 2;
-		int pictures = (int)h->dpb.size + 5;
+		int pictures = (int)h->dpb.size + CONFIG_VDEC_SUNXI_H264_EXTRA_PICTURES;
 
 		while (pictures > (int)h->dpb.size + 3 &&
 		       (size_t)pictures * pic_bytes + fixed >

@@ -89,6 +89,17 @@ config VDEC_SUNXI_MAX_MEMORY_KB
 	  decides how many frame buffers a stream gets (never fewer than the
 	  H.264 references plus three).
 
+config VDEC_SUNXI_H264_EXTRA_PICTURES
+	int "Pictures of an H.264 stream beyond its references"
+	default 5
+	range 3 16
+	help
+	  A stream gets one picture per reference plus this many (one being decoded, one for the
+	  conversion and the ones the application holds); fewer when the memory budget is smaller
+	  (never fewer than the references plus three). An application that keeps a queue of shown
+	  pictures can ask for more: when a decoding step finds no spare picture for the conversion
+	  it can only hand out the tiled picture, which shows as a torn image.
+
 config VDEC_SUNXI_MEM_ALIGN
 	int "Alignment of decoder buffers"
 	default 4096

@@ -676,7 +676,8 @@ static int smhc_xfer(const struct device *dev, struct sdhc_command *cmd, struct 
 		 * through an aligned bounce buffer; only small odd ones are copied by
 		 * the CPU.
 		 */
-		if (len > 4U && len <= ARRAY_SIZE(data->desc) * DES_MAX_LEN) {
+		if (IS_ENABLED(CONFIG_SDHC_SUNXI_USE_DMA) && len > 4U &&
+		    len <= ARRAY_SIZE(data->desc) * DES_MAX_LEN) {
 			if (((uintptr_t)sd->data % SMHC_DMA_ALIGN) == 0U &&
 			    (len % SMHC_DMA_ALIGN) == 0U) {
 				dma_buf = sd->data;

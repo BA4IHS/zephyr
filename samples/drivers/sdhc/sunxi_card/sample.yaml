@@ -1,0 +1,6 @@
+sample:
+  name: Card test
+tests:
+  sample.drivers.sdhc.sunxi_card:
+    platform_allow: yuzukineko
+    tags: sdhc

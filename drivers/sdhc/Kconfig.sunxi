@@ -23,6 +23,13 @@ config SDHC_SUNXI_MAX_DESC
 	  transfer done by DMA: 128 descriptors are 1 MiB. Larger requests are
 	  done by the CPU.
 
+config SDHC_SUNXI_USE_DMA
+	bool "Move the data of a transfer with the DMA engine"
+	default y
+	help
+	  Off: every data transfer goes through the FIFO by the CPU (slower, for finding out whether
+	  a problem is in the DMA path).
+
 config SDHC_SUNXI_BOUNCE_KB
 	int "Size of the bounce buffer in KiB"
 	default 64
