@@ -31,6 +31,7 @@
 #include <zephyr/drivers/reset.h>
 #include <zephyr/drivers/sdhc.h>
 #include <zephyr/irq.h>
+#include <stdlib.h>
 #include <zephyr/kernel.h>
 #include <zephyr/sd/sd_spec.h>
 #include <zephyr/sys/sys_io.h>
@@ -610,7 +611,12 @@ static void *smhc_bounce(struct smhc_data *data, uint32_t len)
 		return NULL;
 	}
 	if (data->bounce == NULL) {
-		data->bounce = k_aligned_alloc(SMHC_DMA_ALIGN, CONFIG_SDHC_SUNXI_BOUNCE_KB * 1024U);
+		/* the malloc arena first: the kernel heap is small and shared with the network */
+		data->bounce = aligned_alloc(SMHC_DMA_ALIGN, CONFIG_SDHC_SUNXI_BOUNCE_KB * 1024U);
+		if (data->bounce == NULL) {
+			data->bounce = k_aligned_alloc(SMHC_DMA_ALIGN,
+						       CONFIG_SDHC_SUNXI_BOUNCE_KB * 1024U);
+		}
 		if (data->bounce == NULL) {
 			LOG_WRN("no memory for the bounce buffer");
 		}
