@@ -99,6 +99,13 @@ static int sunxi_display_write(const struct device *dev, const uint16_t x,
 	return 0;
 }
 
+int display_sunxi_wait_vsync(const struct device *dev, uint32_t timeout_ms)
+{
+	ARG_UNUSED(dev);
+
+	return display_wait_vsync(timeout_ms);
+}
+
 void *display_sunxi_framebuffer(const struct device *dev, uint32_t *stride_bytes)
 {
 	const struct sunxi_display_data *data = dev->data;

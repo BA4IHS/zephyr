@@ -37,6 +37,14 @@ extern "C" {
  */
 void *display_sunxi_framebuffer(const struct device *dev, uint32_t *stride_bytes);
 
+/**
+ * Waits for the start of the next vertical blank. A change of the frame buffer that begins then and
+ * goes through it from the top faster than the display reads it is never seen half done.
+ *
+ * @return 0, or -ETIMEDOUT / -ENODEV
+ */
+int display_sunxi_wait_vsync(const struct device *dev, uint32_t timeout_ms);
+
 /** A YCbCr 4:2:0 picture with an interleaved chroma plane */
 struct display_sunxi_yuv {
 	/** Luma plane */
