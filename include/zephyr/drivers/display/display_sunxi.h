@@ -28,6 +28,15 @@
 extern "C" {
 #endif
 
+/**
+ * The frame buffer that the display engine scans out and display_write() draws on. A caller that
+ * changes it directly (the 2D accelerator moving a part of the picture) has to keep the data cache
+ * coherent: write back before the accelerator reads it, drop the lines of what it wrote.
+ *
+ * @param stride_bytes gets the bytes from one row to the next (may be NULL)
+ */
+void *display_sunxi_framebuffer(const struct device *dev, uint32_t *stride_bytes);
+
 /** A YCbCr 4:2:0 picture with an interleaved chroma plane */
 struct display_sunxi_yuv {
 	/** Luma plane */

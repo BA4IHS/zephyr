@@ -99,6 +99,17 @@ static int sunxi_display_write(const struct device *dev, const uint16_t x,
 	return 0;
 }
 
+void *display_sunxi_framebuffer(const struct device *dev, uint32_t *stride_bytes)
+{
+	const struct sunxi_display_data *data = dev->data;
+
+	if (stride_bytes != NULL) {
+		*stride_bytes = data->stride;
+	}
+
+	return sunxi_fb;
+}
+
 static int sunxi_display_blanking(const struct device *dev, bool on)
 {
 	struct sunxi_display_data *data = dev->data;
