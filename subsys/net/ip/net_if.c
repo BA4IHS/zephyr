@@ -3788,6 +3788,16 @@ static struct in_addr *net_if_ipv4_get_best_match(struct net_if *iface,
 			continue;
 		}
 
+		/* The loopback address is only a candidate for a loopback destination. The match
+		 * below counts the bits in common with the subnet, so 127.0.0.1 would win over the
+		 * address of a real interface for every destination whose first bit is 0 (all of
+		 * 1.0.0.0/8 to 127.0.0.0/8), and the packets would be sent to the loopback interface.
+		 */
+		if (net_ipv4_is_addr_loopback(&ipv4->unicast[i].ipv4.address.in_addr) &&
+		    !net_ipv4_is_addr_loopback((struct in_addr *)dst)) {
+			continue;
+		}
+
 		/* This is a dirty hack until we have proper IPv4 routing.
 		 * Without this the IPv4 packets might go to VPN interface for
 		 * subnets that are not on the same subnet as the VPN interface
